@@ -1,3 +1,17 @@
+function deviceType(ua) {
+  if (/iPad|Tablet/i.test(ua)) return 'Tablet';
+  if (/iPhone|Android.*Mobile|Mobile/i.test(ua)) return 'Mobile';
+  return 'Desktop';
+}
+
+function browserType(ua) {
+  if (/CriOS|Chrome/i.test(ua) && !/Edg/i.test(ua)) return 'Chrome';
+  if (/FxiOS|Firefox/i.test(ua)) return 'Firefox';
+  if (/EdgiOS|Edg/i.test(ua)) return 'Edge';
+  if (/Safari/i.test(ua) && !/Chrome|CriOS/i.test(ua)) return 'Safari';
+  return 'Unknown browser';
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -22,21 +36,24 @@ export default async function handler(req, res) {
     const screen = String(body.screen || 'Unknown');
     const page = String(body.page || '/');
     const referrer = String(body.referrer || 'Direct');
+    const device = deviceType(ua);
+    const browser = browserType(ua);
     const time = new Date().toLocaleString('en-US', { timeZone: 'UTC', hour12: false }) + ' UTC';
 
     let message;
-
     if (event === 'login') {
-      message = `🔐 CashPay: successful login from ${country}, using ${ua}.`;
+      message = `🔐 CashPay: successful login from ${country} on a ${device} using ${browser}.`;
     } else if (event === 'withdraw') {
-      message = `💸 CashPay: withdrawal button clicked from ${country}, using ${ua}.`;
+      message = `💸 CashPay: withdrawal button clicked from ${country} on a ${device} using ${browser}.`;
     } else {
       message = [
         '🌐 CashPay — Site opened',
         `Country: ${country}`,
         `Region: ${region}`,
         `City: ${city}`,
-        `Device/Browser: ${ua}`,
+        `Device: ${device}`,
+        `Browser: ${browser}`,
+        `User agent: ${ua}`,
         `Language: ${language}`,
         `Timezone: ${timezone}`,
         `Screen: ${screen}`,
