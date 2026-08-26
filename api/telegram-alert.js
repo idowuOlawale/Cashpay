@@ -12,7 +12,7 @@ function browserType(ua) {
   return 'Unknown browser';
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
@@ -87,6 +87,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   } catch (error) {
     console.error('[CashPay Telegram] Handler error:', error);
-    return res.status(400).json({ ok: false, error: 'Invalid request' });
+    return res.status(400).json({ ok: false, error: error.message || 'Invalid request' });
   }
-}
+};
