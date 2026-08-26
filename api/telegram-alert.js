@@ -21,6 +21,7 @@ export default async function handler(req, res) {
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (!token || !chatId) {
+    console.error('[CashPay Telegram] Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID');
     return res.status(500).json({ ok: false, error: 'Telegram environment variables are not configured' });
   }
 
@@ -61,7 +62,7 @@ export default async function handler(req, res) {
       `Referrer: ${referrer}`
     ].join('\n');
 
-    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const telegramResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -71,13 +72,21 @@ export default async function handler(req, res) {
       })
     });
 
-    const result = await response.json();
-    if (!response.ok || !result.ok) {
-      return res.status(502).json({ ok: false, error: 'Telegram request failed' });
+    const result = await telegramResponse.json();
+
+    if (!telegramResponse.ok || !result.ok) {
+      console.error('[CashPay Telegram] Telegram API rejected message:', result);
+      return res.status(502).json({
+        ok: false,
+        error: 'Telegram request failed',
+        telegramError: result.description || 'Unknown Telegram error'
+      });
     }
 
+    console.log(`[CashPay Telegram] ${event} alert sent successfully`);
     return res.status(200).json({ ok: true });
-  } catch {
+  } catch (error) {
+    console.error('[CashPay Telegram] Handler error:', error);
     return res.status(400).json({ ok: false, error: 'Invalid request' });
   }
 }
