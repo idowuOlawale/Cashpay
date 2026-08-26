@@ -28,9 +28,9 @@ export default async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
     const event = String(body.event || 'site_opened');
     const ua = String(req.headers['user-agent'] || body.userAgent || 'Unknown');
-    const country = String(req.headers['x-vercel-ip-country'] || body.country || 'Unknown');
-    const region = String(req.headers['x-vercel-ip-country-region'] || body.region || 'Unknown');
-    const city = String(req.headers['x-vercel-ip-city'] || body.city || 'Unknown');
+    const country = String(req.headers['x-vercel-ip-country'] || 'Unknown');
+    const region = String(req.headers['x-vercel-ip-country-region'] || 'Unknown');
+    const city = String(req.headers['x-vercel-ip-city'] || 'Unknown');
     const timezone = String(body.timezone || 'Unknown');
     const language = String(body.language || 'Unknown');
     const screen = String(body.screen || 'Unknown');
@@ -38,35 +38,37 @@ export default async function handler(req, res) {
     const referrer = String(body.referrer || 'Direct');
     const device = deviceType(ua);
     const browser = browserType(ua);
-    const time = new Date().toLocaleString('en-US', { timeZone: 'UTC', hour12: false }) + ' UTC';
+    const time = new Date().toISOString();
 
-    let message;
-    if (event === 'login') {
-      message = `🔐 CashPay: successful login from ${country} on a ${device} using ${browser}.`;
-    } else if (event === 'withdraw') {
-      message = `💸 CashPay: withdrawal button clicked from ${country} on a ${device} using ${browser}.`;
-    } else {
-      message = [
-        '🌐 CashPay — Site opened',
-        `Country: ${country}`,
-        `Region: ${region}`,
-        `City: ${city}`,
-        `Device: ${device}`,
-        `Browser: ${browser}`,
-        `User agent: ${ua}`,
-        `Language: ${language}`,
-        `Timezone: ${timezone}`,
-        `Screen: ${screen}`,
-        `Page: ${page}`,
-        `Referrer: ${referrer}`,
-        `Time: ${time}`
-      ].join('\n');
-    }
+    const eventLabels = {
+      site_opened: '🌐 CashPay — Site opened',
+      login: '🔐 CashPay — Successful login',
+      withdraw: '💸 CashPay — Withdraw button clicked'
+    };
+
+    const message = [
+      eventLabels[event] || `CashPay — ${event}`,
+      `Time: ${time}`,
+      `Country: ${country}`,
+      `Region: ${region}`,
+      `City: ${city}`,
+      `Device: ${device}`,
+      `Browser: ${browser}`,
+      `Language: ${language}`,
+      `Timezone: ${timezone}`,
+      `Screen: ${screen}`,
+      `Page: ${page}`,
+      `Referrer: ${referrer}`
+    ].join('\n');
 
     const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: message.slice(0, 4000), disable_web_page_preview: true })
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message.slice(0, 4000),
+        disable_web_page_preview: true
+      })
     });
 
     const result = await response.json();
